@@ -1,0 +1,33 @@
+useShader(shaderProgram): use the shader program call ever loop
+
+setCameraPos(): set the camera position
+setCameraTarget(): set the camera target
+setCameraMode(gloconst cameramode): set camera to be freecam, disabled, or limited:
+cameraUpdate(deltaT): update the camera if it's in freecam or limited.
+GLO_CAMERA_MODE_DISABLED GLO_CAMERA_MODE_LIMITED GLO_CAMERA_MODE_FREECAM
+
+getMousePos(*ptrx, *ptry): get mouse pos and send to ptr x and ptr y
+setMouseMode(bool): hide or show the cursor
+setMousePos(x, y): set the mouse positon
+
+terminate(): kill glfw
+forceLowInput(): force low input mode. call every loop
+clearBuffer(): clear color and depth buffer call every loop
+setClearColor(): set the clear color
+flipDisplay(): flip the display call every loop
+poll(): poll events call every loop
+
+getTime(): get time in delta milliseconds since gl was started
+
+enableWireframeMode(): enable wireframe mode
+getMVPloc(): return unsigend int mvp loc
+getMVP(): return the proj * view * mod.
+getDirectionVector(): get direction vector (not normalized)
+getRightVector(): get right vector
+getUpVector(): get up vector
+
+prepVAO(data, size): set VAO
+prepVBO(): prep VBO
+prepCBO(data* size): set CBO
+
+setModTranslation(float x, float y, float z, angle = 0.0f): set the model matrix translations
