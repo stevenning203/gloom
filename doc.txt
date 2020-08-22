@@ -31,3 +31,5 @@ prepVBO(): prep VBO
 prepCBO(data* size): set CBO
 
 setModTranslation(float x, float y, float z, angle = 0.0f): set the model matrix translations
+setModTransformation(transformations): move / rotate / scale an object
+resetModTransformation(): reset transformations
