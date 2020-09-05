@@ -1,4 +1,6 @@
 #pragma once
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include <glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -10,7 +12,6 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
-#include <assimp/Importer.hpp>
 
 
 namespace glE

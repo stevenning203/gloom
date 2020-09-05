@@ -1,9 +1,9 @@
-#pragma once
+#ifndef GLO_IMPORTED
+#define GLO_IMPORTED
 #include "gloomE.h"
-#include <random>
 #include <ctime>
-#include <stdio.h>
 #include <stdlib.h>
+#include <unordered_map>
 
 typedef const int gloconst;
 gloconst GLO_CAMERA_MODE_FREECAM = 0x20;
@@ -19,6 +19,9 @@ const float mouseSens = 0.2f;
 const float moveSens = 5.0f;
 float fovLocal = 90.0f;
 
+float zNear = 0.1f;
+float zFar = 100.0f;
+
 int staticWidth = 0;
 int staticHeight = 0;
 
@@ -33,7 +36,9 @@ glm::vec3 camHed = glm::vec3(0, 1, 0);
 glm::mat4 proj;
 glm::mat4 mod = glm::mat4(1.0f);
 glm::mat4 trans = glm::mat4(1.0f);
-glm::mat4 rot = glm::mat4(1.0f);
+glm::mat4 rotX = glm::mat4(1.0f);
+glm::mat4 rotY = glm::mat4(1.0f);
+glm::mat4 rotZ = glm::mat4(1.0f);
 glm::mat4 scale = glm::mat4(1.0f);
 glm::mat4 view = glm::lookAt(camPos, camTrg, camHed);
 glm::mat4 mvp;
@@ -112,6 +117,16 @@ namespace glo
 {
 #pragma region elementary
 
+	inline float getHypoteneuse(float a, float b)
+	{
+		return pow(pow(a, 2) + pow(b, 2), 0.5f);
+	}
+
+	float scalarNormalize(float x)
+	{
+		return x >= 0 ? 1 : -1;
+	}
+
 	unsigned int getKey(unsigned int glKeycode)
 	{
 		return glfwGetKey(staticWindow, glKeycode);
@@ -151,13 +166,7 @@ namespace glo
 			view = glm::lookAt(camPos, camPos + direction, up);
 		else
 			view = glm::lookAt(camPos, camTrg, glm::vec3(0, 1, 0));
-		return proj * view * mod * trans * rot * scale;
-	}
-
-	void setFOV(float fieldOfView)
-	{
-		fovLocal = fieldOfView;
-		proj = glm::perspective(glm::radians(90.0f), (float)staticWidth / (float)staticHeight, 0.1f, 100.0f);
+		return proj * view * mod * trans * rotX * rotY * rotZ * scale;
 	}
 
 	unsigned int getMVPloc()
@@ -175,11 +184,6 @@ namespace glo
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
-	void useShader(unsigned int shaderProgram)
-	{
-		glUseProgram(shaderProgram);
-	}
-
 	void flipDisplay()
 	{
 		glfwSwapBuffers(staticWindow);
@@ -193,6 +197,16 @@ namespace glo
 	void setCameraPos(float x, float y, float z)
 	{
 		camPos = glm::vec3(x, y, z);
+	}
+
+	void setCameraPos(glm::vec3 inputpos)
+	{
+		camPos = inputpos;
+	}
+
+	glm::vec3 getCameraPos()
+	{
+		return camPos;
 	}
 
 	void setCameraTarget(float x, float y, float z)
@@ -257,28 +271,61 @@ namespace glo
 		return glfwGetTime();
 	}
 
-	void setModTranslation(float x, float y, float z)
+	void __setModTranslationNULL(float x, float y, float z)
 	{
 		mod = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
 	}
 
-	void setModTransformation(float xtrans = 0, float ytrans = 0, float ztrans = 0, float deg = 0, int x = 0, int y = 0, int z = 0, float scalex = 1.0f, float scaley = 1.0f, float scalez = 1.0f)
+	void setModScale(float scalex = 1.0f, float scaley = 1.0f, float scalez = 1.0f)
+	{
+		scale = glm::scale(glm::mat4(1.0f), glm::vec3(scalex, scaley, scalez));
+	}
+
+	void setModTranslation(float xtrans = 0, float ytrans = 0, float ztrans = 0)
 	{
 		trans = glm::translate(glm::mat4(1.0f), glm::vec3(xtrans, ytrans, ztrans));
-		rot = glm::rotate(glm::mat4(1.0f), glm::radians(deg), glm::vec3(x, y, z));
-		scale = glm::scale(glm::mat4(1.0f), glm::vec3(scalex, scaley, scalez));
+	}
+
+	void setModRotationX(float degrees = 0)
+	{
+		rotX = glm::rotate(glm::mat4(1.0f), glm::radians(degrees), glm::vec3(1, 0, 0));
+	}
+
+	void setModRotationY(float degrees = 0)
+	{
+		rotY = glm::rotate(glm::mat4(1.0f), glm::radians(degrees), glm::vec3(0, 1, 0));
+	}
+
+	void setModRotationZ(float degrees = 0)
+	{
+		rotZ = glm::rotate(glm::mat4(1.0f), glm::radians(degrees), glm::vec3(0, 0, 1));
 	}
 
 	void resetModTransformation()
 	{
 		trans = glm::mat4(1.0f);
-		rot = glm::mat4(1.0f);
+		rotX = glm::mat4(1.0f);
+		rotY = glm::mat4(1.0f);
+		rotZ = glm::mat4(1.0f);
 		scale = glm::mat4(1.0f);
+	}
+
+	void setFOV(float fov)
+	{
+		fovLocal = fov;
+		proj = glm::perspective(fov, (float)staticWidth / (float)staticHeight, zNear, zFar);
+	}
+
+	void setZNearFar(float nearZ, float farZ)
+	{
+		zNear = nearZ;
+		zFar = farZ;
+		proj = glm::perspective(fovLocal, (float)staticWidth / (float)staticHeight, nearZ, farZ);
 	}
 
 #pragma endregion elementary
 
-	GLFWwindow* gloInit(int windowWidth, int windowHeight, const char * windowName, unsigned int *shaderPtr, bool fullScreen = NULL)
+	GLFWwindow* gloInit(int windowWidth, int windowHeight, const char* windowName, bool fullScreen = NULL)
 	{
 		srand((unsigned)time(0));
 		int width = windowWidth;
@@ -288,6 +335,7 @@ namespace glo
 		glfwInit();
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_SAMPLES, 4);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 		if (fullScreen == true)
 			window = glfwCreateWindow(width, height, windowName, glfwGetPrimaryMonitor(), NULL);
@@ -311,28 +359,19 @@ namespace glo
 		glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 		unsigned int shaderProgram = glE::shaderInit("res/shaders/basic.shader");
 		MVPlocID = glGetUniformLocation(shaderProgram, "MVP");
-		*shaderPtr = shaderProgram;
+		glUseProgram(shaderProgram);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
+		glEnable(GL_MULTISAMPLE);
 		glfwSetCursorPosCallback(staticWindow, cursorPosCallback);
 		return window;
 	}
 
 	void drawVAO(unsigned int VAOID, int size, glm::vec3 loc)
 	{
-		setModTranslation(loc[0], loc[1], loc[2]);
+		__setModTranslationNULL(loc[0], loc[1], loc[2]);
 		glm::mat4 tmvp = getMVP();
 		glBindVertexArray(VAOID);
-		glUniformMatrix4fv(getMVPloc(), 1, GL_FALSE, &tmvp[0][0]);
-		glDrawArrays(GL_TRIANGLES, 0, size / sizeof(float));
-	}
-
-	void drawVAO(glm::vec3 VAOID, int size, glm::vec3 loc)
-	{
-		setModTranslation(loc[0], loc[1], loc[2]);
-		glm::mat4 tmvp = getMVP();
-		glBindVertexArray(VAOID[0]);
-		glBindVertexArray(VAOID[1]);
 		glUniformMatrix4fv(getMVPloc(), 1, GL_FALSE, &tmvp[0][0]);
 		glDrawArrays(GL_TRIANGLES, 0, size / sizeof(float));
 	}
@@ -391,68 +430,40 @@ namespace glo
 		}
 	}
 
-	unsigned int loadVertexArray(float* data, int size, float* colorData, int colorDataSize)
+	unsigned int loadObjVertices(std::string pathToFile, unsigned int* nVerticesPtr)
 	{
-		unsigned int a, b, c;
-		glGenBuffers(1, &b);
-		glBindBuffer(GL_ARRAY_BUFFER, b);
-		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-
-		glGenVertexArrays(1, &a);
-		glBindVertexArray(a);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-		glGenBuffers(1, &c);
-		glBindBuffer(GL_ARRAY_BUFFER, c);
-		glBufferData(GL_ARRAY_BUFFER, colorDataSize, colorData, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		return a;
-	}
-
-	unsigned int loadVertexArray(std::vector<float> data, int size, float* colorData, int colorDataSize)
-	{
-		unsigned int a, b, c;
-		glGenBuffers(1, &b);
-		glBindBuffer(GL_ARRAY_BUFFER, b);
-		glGenVertexArrays(1, &a);
-		glBindVertexArray(a);
-		glBufferData(GL_ARRAY_BUFFER, size, &data[0], GL_STATIC_DRAW);
-		glGenBuffers(1, &c);
-		glBindBuffer(GL_ARRAY_BUFFER, c);
-		glBufferData(GL_ARRAY_BUFFER, colorDataSize, colorData, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, b);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, c);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		return a;
-	}
-
-	std::vector<float> getColorBufferMap(int numberOfVertices)
-	{
-		std::vector<float> colors;
-		for (int i = 0; i < numberOfVertices; i++)
-		{
-			float currentColor = ((float)(rand() % 1000)) / 1000;
-			colors.push_back(currentColor);
-		}
-		return colors;
-	}
-
-	unsigned int loadObjVertices(std::string pathToFile, int* nVerticesPtr, float* colorData = NULL, int colorDataSize = NULL)
-	{
+		std::string key;
+		std::unordered_map<std::string, glm::vec3> mtl;
+		std::vector<float> colorData;
+		glm::vec3 currentmtl(0, 0, 0);
+		std::string currentmtlmode;
 		std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
 		std::vector<float> outV, outU, outN;
 		std::vector<glm::vec3> vertices, normals;
 		std::vector<glm::vec2> uvs;
 		std::string path = pathToFile;
+		std::string mtlPath = pathToFile.substr(0, pathToFile.size() - 4) + ".mtl";
 		std::string line;
 		std::ifstream stream;
-		stream.open(path);
+		stream.open(mtlPath);
 		while (getline(stream, line))
+		{
+			if (line.substr(0, 6) == "newmtl")
+			{
+				line.erase(0, 7);
+				key = line;
+			}
+			if (line.substr(0, 2) == "Kd")
+			{
+				line.erase(0, 3);
+				std::vector<float> temps = split(line, ' ');
+				glm::vec3 val(temps[0], temps[1], temps[2]);
+				mtl[key] = val;
+			}
+		}
+		stream.close();
+		stream.open(path);
+		while (std::getline(stream, line))
 		{
 			if (line.substr(0, 2) == "v ")
 			{
@@ -471,6 +482,12 @@ namespace glo
 				line.erase(0, 3);
 				std::vector<float> temp = split(line, ' ');
 				normals.push_back(glm::vec3(temp[0], temp[1], temp[2]));
+			}
+			if (line.substr(0, 6) == "usemtl")
+			{
+				line.erase(0, 7);
+				currentmtlmode = line;
+				currentmtl = mtl[currentmtlmode];
 			}
 			if (line.substr(0, 2) == "f ")
 			{
@@ -493,6 +510,10 @@ namespace glo
 				normalIndices.push_back(temp1[2]);
 				normalIndices.push_back(temp2[2]);
 				normalIndices.push_back(temp3[2]);
+				for (int i = 0; i < 9; i++)
+				{
+					colorData.push_back(currentmtl[i % 3] + (rand() % 10) / 200.0f);
+				}
 			}
 		}
 		int n = 0;
@@ -505,7 +526,7 @@ namespace glo
 			outV.push_back((float)vertex[1]);
 			outV.push_back((float)vertex[2]);
 		}
-		*nVerticesPtr = n * 3;
+		*nVerticesPtr = outV.size() * sizeof(float);
 		for (int i = 0; i < normalIndices.size(); i++)
 		{
 			unsigned int normalIndex = normalIndices[i];
@@ -533,15 +554,15 @@ namespace glo
 
 		glGenBuffers(1, &c);
 		glBindBuffer(GL_ARRAY_BUFFER, c);
-		if (colorData)
-			glBufferData(GL_ARRAY_BUFFER, colorDataSize, colorData, GL_STATIC_DRAW);
-		else
-		{
-			std::vector<float> tColorBuffer = getColorBufferMap(outV.size());
-			glBufferData(GL_ARRAY_BUFFER, tColorBuffer.size() * sizeof(float), &tColorBuffer[0], GL_STATIC_DRAW);
-		}
+		glBufferData(GL_ARRAY_BUFFER, colorData.size() * sizeof(float), &colorData[0], GL_STATIC_DRAW);
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		return a;
 	}
+
+	void loadTexture(const char * path)
+	{
+
+	}
 }
+#endif
