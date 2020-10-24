@@ -7,21 +7,22 @@ cameraUpdate(deltaT): update the camera if it's in freecam or limited.
 GLO_CAMERA_MODE_DISABLED GLO_CAMERA_MODE_LIMITED GLO_CAMERA_MODE_FREECAM
 
 getMousePos(*ptrx, *ptry): get mouse pos and send to ptr x and ptr y
-setMouseMode(bool): hide or show the cursor
+setMouseMode(gloconst): hide or show the cursor
 setMousePos(x, y): set the mouse positon
 
-terminate(): kill glfw
-forceLowInput(): force low input mode. call every loop
-clearBuffer(): clear color and depth buffer call every loop
-setClearColor(): set the clear color
-flipDisplay(): flip the display call every loop
-poll(): poll events call every loop
+//terminate(): kill glfw
+//forceLowInput(): force low input mode. call every loop
+//clearBuffer(): clear color and depth buffer call every loop
+//setClearColor(): set the clear color
+//flipDisplay(): flip the display call every loop
+//poll(): poll events call every loop
 
 getTime(): get time in delta milliseconds since gl was started
 
-enableWireframeMode(): enable wireframe mode
+//enableWireframeMode(): enable wireframe mode
+//and disable wire
 getMVPloc(): return unsigend int mvp loc
-getMVP(): return the proj * view * mod.
+//getMVP(): return the proj * view * mod.
 getDirectionVector(): get direction vector (not normalized)
 getRightVector(): get right vector
 getUpVector(): get up vector
